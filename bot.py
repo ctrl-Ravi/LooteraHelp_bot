@@ -4,6 +4,7 @@ import re
 import os
 from dotenv import load_dotenv
 from keep_alive import keep_alive
+from pymongo import MongoClient
 
 # Load environment variables from .env file (for local development)
 load_dotenv()
@@ -14,15 +15,17 @@ load_dotenv()
 # Read Bot Token and Admin Chat ID from environment variables
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 ADMIN_CHAT_ID = os.environ.get('ADMIN_CHAT_ID')
+MONGO_URI = os.environ.get('MONGO_URI')
 
-if not BOT_TOKEN or not ADMIN_CHAT_ID:
-    print("CRITICAL ERROR: BOT_TOKEN or ADMIN_CHAT_ID is missing from environment variables!")
+if not BOT_TOKEN or not ADMIN_CHAT_ID or not MONGO_URI:
+    print("CRITICAL ERROR: BOT_TOKEN, ADMIN_CHAT_ID, or MONGO_URI is missing from environment variables!")
     exit(1)
 
-# File to store user IDs for broadcasting
-USERS_FILE = 'users.txt'
-# File to store banned user IDs
-BANNED_USERS_FILE = 'banned.txt'
+# Initialize MongoDB connection
+client = MongoClient(MONGO_URI)
+db = client['lootera_bot_db']
+users_collection = db['users']
+banned_collection = db['banned_users']
 # ==========================================
 
 bot = telebot.TeleBot(BOT_TOKEN)
@@ -49,42 +52,28 @@ def get_main_menu():
     return markup
 
 def save_user_id(user_id):
-    """Save user ID to a file if it doesn't already exist."""
+    """Save user ID to database if it doesn't already exist."""
     user_id_str = str(user_id)
-    users = get_all_users()
-    if user_id_str not in users:
-        with open(USERS_FILE, 'a') as f:
-            f.write(user_id_str + '\n')
+    if not users_collection.find_one({'user_id': user_id_str}):
+        users_collection.insert_one({'user_id': user_id_str})
 
 def get_all_users():
-    """Retrieve all saved user IDs from the file."""
-    if not os.path.exists(USERS_FILE):
-        return []
-    with open(USERS_FILE, 'r') as f:
-        return [line.strip() for line in f.readlines() if line.strip()]
+    """Retrieve all saved user IDs from database."""
+    return [doc['user_id'] for doc in users_collection.find()]
 
 def is_user_banned(user_id):
-    """Check if a user is in the banned list."""
-    if not os.path.exists(BANNED_USERS_FILE):
-        return False
-    with open(BANNED_USERS_FILE, 'r') as f:
-        return str(user_id) in [line.strip() for line in f.readlines() if line.strip()]
+    """Check if a user is in the banned collection."""
+    return banned_collection.find_one({'user_id': str(user_id)}) is not None
 
 def ban_user(user_id):
-    """Add user ID to banned file."""
-    if not is_user_banned(user_id):
-        with open(BANNED_USERS_FILE, 'a') as f:
-            f.write(str(user_id) + '\n')
+    """Add user ID to banned database collection."""
+    user_id_str = str(user_id)
+    if not is_user_banned(user_id_str):
+        banned_collection.insert_one({'user_id': user_id_str})
 
 def unban_user(user_id):
-    """Remove user ID from banned file."""
-    if is_user_banned(user_id):
-        with open(BANNED_USERS_FILE, 'r') as f:
-            lines = [line.strip() for line in f.readlines() if line.strip()]
-        with open(BANNED_USERS_FILE, 'w') as f:
-            for line in lines:
-                if line != str(user_id):
-                    f.write(line + '\n')
+    """Remove user ID from banned database collection."""
+    banned_collection.delete_one({'user_id': str(user_id)})
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):

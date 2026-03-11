@@ -28,9 +28,10 @@ Because Render shuts down "Free Web Services" if they don't receive web traffic 
 
 Critical variables have been stripped from the source code and must be provided via the Render Dashboard.
 
-In your Render Dashboard (**Environment** section), add these two Secret Variables:
+In your Render Dashboard (**Environment** section), add these three Secret Variables:
 - `BOT_TOKEN`: The API token provided by `@BotFather` on Telegram.
 - `ADMIN_CHAT_ID`: Your personal Telegram User ID (e.g. `12345678`), where you want submissions forwarded to.
+- `MONGO_URI`: A MongoDB connection string (e.g. Atlas) to permanently store your users and banned lists across server restarts.
 
 *(If testing locally, clone the repo and create a `.env` file in the root directory with these same variables).*
 
@@ -43,4 +44,5 @@ In your Render Dashboard (**Environment** section), add these two Secret Variabl
 * Python 3
 * `pyTelegramBotAPI` (Telegram wrapper)
 * `Flask` & `requests` (Render Keep-Alive architecture)
+* `pymongo` (Permanent Cloud Database Storage)
 * `python-dotenv` (Secure variable management)
