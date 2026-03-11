@@ -159,21 +159,6 @@ def handle_admin_reply(message):
                 bot.copy_message(original_user_id, message.chat.id, message.message_id)
                 bot.send_message(original_user_id, "*(↑ Admin sent the above message)*", parse_mode='Markdown')
                 
-            # Set the user to a permanent chat state without requiring the menu
-            user_id_int = int(original_user_id)
-            if user_states.get(user_id_int) != "💬 Chatting with Admin" and user_states.get(original_user_id) != "💬 Chatting with Admin":
-                markup = ReplyKeyboardMarkup(resize_keyboard=True)
-                markup.add(KeyboardButton(OPT_CANCEL))
-                bot.send_message(
-                    original_user_id, 
-                    "_You are now connected to the admin. You can continue sending messages directly. Press Cancel to end._", 
-                    reply_markup=markup, 
-                    parse_mode='Markdown'
-                )
-                # Save both int and str to be safe against Telegram API ID types
-                user_states[user_id_int] = "💬 Chatting with Admin"
-                user_states[str(original_user_id)] = "💬 Chatting with Admin"
-            
             bot.reply_to(message, "✅ Reply sent successfully to the user!")
         except Exception as e:
             bot.reply_to(message, f"⚠️ Failed to send reply. The user might have blocked the bot. Error: {e}")
@@ -276,14 +261,10 @@ def handle_user_submission(message):
     chat_id = message.chat.id
     state = user_states.get(chat_id)
     
-    # If they haven't selected an option but send something
+    # If they haven't selected an option but send something, default to General
     if not state:
-        bot.send_message(
-            chat_id, 
-            "Please select an option from the menu first.", 
-            reply_markup=get_main_menu()
-        )
-        return
+        state = "💬 General Message"
+        user_states[chat_id] = state
 
     try:
         # Prepare info about the user context
@@ -319,23 +300,13 @@ def handle_user_submission(message):
                 parse_mode='HTML'
             )
         
-        # Confirm success to the user
-        if state == "💬 Chatting with Admin":
-            # Short confirmation so we don't spam the conversation
-            bot.send_message(
-                chat_id, 
-                "✅ *Sent.*", 
-                parse_mode='Markdown'
-            )
-        else:
-            bot.send_message(
-                chat_id, 
-                "✅ *Thank you!* Your message has been sent to our team.", 
-                reply_markup=get_main_menu(),
-                parse_mode='Markdown'
-            )
-            # Reset state so they can use the menu again
-            user_states[chat_id] = None
+        # Confirm success to the user quietly
+        bot.send_message(
+            chat_id, 
+            "✅ *Sent.* (You can continue sending messages or choose a new option from the menu)", 
+            reply_markup=get_main_menu(),
+            parse_mode='Markdown'
+        )
         
     except Exception as e:
         error_msg = f"⚠️ Sorry, there was an error sending your message.\n\nError details: {e}\n\nPlease check ADMIN_CHAT_ID."
