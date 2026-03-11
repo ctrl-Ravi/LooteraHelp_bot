@@ -159,6 +159,17 @@ def handle_admin_reply(message):
                 bot.copy_message(original_user_id, message.chat.id, message.message_id)
                 bot.send_message(original_user_id, "*(↑ Admin sent the above message)*", parse_mode='Markdown')
                 
+            # Set the user to a permanent chat state without requiring the menu
+            markup = ReplyKeyboardMarkup(resize_keyboard=True)
+            markup.add(KeyboardButton(OPT_CANCEL))
+            bot.send_message(
+                original_user_id, 
+                "_You are now connected to the admin. You can continue sending messages directly. Press Cancel to end._", 
+                reply_markup=markup, 
+                parse_mode='Markdown'
+            )
+            user_states[int(original_user_id)] = "💬 Chatting with Admin"
+            
             bot.reply_to(message, "✅ Reply sent successfully to the user!")
         except Exception as e:
             bot.reply_to(message, f"⚠️ Failed to send reply. The user might have blocked the bot. Error: {e}")
@@ -305,15 +316,22 @@ def handle_user_submission(message):
             )
         
         # Confirm success to the user
-        bot.send_message(
-            chat_id, 
-            "✅ *Thank you!* Your message has been sent to our team.", 
-            reply_markup=get_main_menu(),
-            parse_mode='Markdown'
-        )
-        
-        # Reset state so they can use the menu again
-        user_states[chat_id] = None
+        if state == "💬 Chatting with Admin":
+            # Short confirmation so we don't spam the conversation
+            bot.send_message(
+                chat_id, 
+                "✅ *Sent.*", 
+                parse_mode='Markdown'
+            )
+        else:
+            bot.send_message(
+                chat_id, 
+                "✅ *Thank you!* Your message has been sent to our team.", 
+                reply_markup=get_main_menu(),
+                parse_mode='Markdown'
+            )
+            # Reset state so they can use the menu again
+            user_states[chat_id] = None
         
     except Exception as e:
         error_msg = f"⚠️ Sorry, there was an error sending your message.\n\nError details: {e}\n\nPlease check ADMIN_CHAT_ID."
