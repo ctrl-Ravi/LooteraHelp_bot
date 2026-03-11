@@ -153,7 +153,7 @@ def handle_admin_reply(message):
         try:
             # Send the admin's reply back to the user
             if message.text:
-                bot.send_message(original_user_id, f"👨‍💻 *Admin Reply:*\n\n{message.text}", parse_mode='Markdown')
+                bot.send_message(original_user_id, message.text)
             else:
                 # If admin sent a photo/video/file, copy it to the user
                 bot.copy_message(original_user_id, message.chat.id, message.message_id)
