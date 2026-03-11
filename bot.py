@@ -3,7 +3,7 @@ from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 import re
 import os
 from dotenv import load_dotenv
-# from keep_alive import keep_alive
+from keep_alive import keep_alive
 
 # Load environment variables from .env file (for local development)
 load_dotenv()
@@ -336,6 +336,6 @@ def handle_user_submission(message):
         print(f"Error forwarding message: {e}")
 
 if __name__ == "__main__":
-    # keep_alive()
+    keep_alive()
     print("Bot is running! Press Ctrl+C to stop.")
     bot.infinity_polling()
