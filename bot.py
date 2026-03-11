@@ -160,15 +160,19 @@ def handle_admin_reply(message):
                 bot.send_message(original_user_id, "*(↑ Admin sent the above message)*", parse_mode='Markdown')
                 
             # Set the user to a permanent chat state without requiring the menu
-            markup = ReplyKeyboardMarkup(resize_keyboard=True)
-            markup.add(KeyboardButton(OPT_CANCEL))
-            bot.send_message(
-                original_user_id, 
-                "_You are now connected to the admin. You can continue sending messages directly. Press Cancel to end._", 
-                reply_markup=markup, 
-                parse_mode='Markdown'
-            )
-            user_states[int(original_user_id)] = "💬 Chatting with Admin"
+            user_id_int = int(original_user_id)
+            if user_states.get(user_id_int) != "💬 Chatting with Admin" and user_states.get(original_user_id) != "💬 Chatting with Admin":
+                markup = ReplyKeyboardMarkup(resize_keyboard=True)
+                markup.add(KeyboardButton(OPT_CANCEL))
+                bot.send_message(
+                    original_user_id, 
+                    "_You are now connected to the admin. You can continue sending messages directly. Press Cancel to end._", 
+                    reply_markup=markup, 
+                    parse_mode='Markdown'
+                )
+                # Save both int and str to be safe against Telegram API ID types
+                user_states[user_id_int] = "💬 Chatting with Admin"
+                user_states[str(original_user_id)] = "💬 Chatting with Admin"
             
             bot.reply_to(message, "✅ Reply sent successfully to the user!")
         except Exception as e:
